@@ -1,39 +1,47 @@
-// if (usersDatabase.has(email)) {
-//   const conflictError = ErrorHandler.ConflictError({
-//     server:
-//       'Пользователь с таким адресом электронной почты уже зарегистрирован',
-//     client: 'User with this email already exists'
-//   });
-
-//   res.status(conflictError.status).json({
-//     error: {
-//       message: conflictError.message,
-//       payload: conflictError.payload
-//     }
-//   });
-//   return;
-// }
-// import prisma from '@/prisma/prisma.js';
+import prisma from 'prisma/prisma.js';
 import { env } from '@/config/env.js';
-// import { genToken, genPassword /*, genUuid */ } from '@/helpers/index.js';
-// import { expiresJwt } from '@/config/jwt.js';
+import { genPassword, genUuid } from '@/utils/cryptoTools.js';
+import { ErrorHandler } from '@/utils/ErrorHandler.js';
+import { createToken } from '@/utils/jwtTokens.js';
 
-const getCookieOptions = (remove = false) => ({
-  domain: env.REFRESH_COOKIE_DOMAIN,
-  httpOnly: env.REFRESH_COOKIE_HTTP_ONLY,
-  maxAge: remove ? 0 : env.REFRESH_COOKIE_MAX_AGE,
-  path: env.REFRESH_COOKIE_PATH,
-  sameSite: env.REFRESH_COOKIE_SAME_SITE,
-  secure: env.REFRESH_COOKIE_SECURE
-});
-
-const registration = async (
-  name: string,
+export const registartion = async (
   email: string,
-  password: string
-): Promise<void> => {
-  try {
-  } catch (error) {
-    console.log();
+  password: string,
+  name: string
+) => {
+  const isUserExist = await prisma.user.findUnique({
+    where: {
+      email
+    }
+  });
+
+  if (isUserExist !== null) {
+    ErrorHandler.ConflictError({
+      server: 'This acc exist',
+      client: 'This acc exist'
+    });
+    return;
   }
+  const payload = { uuid: genUuid() };
+
+  const tokens = {
+    [env.ACCESS_TOKEN_NAME]: createToken(payload, {
+      expiresIn: env.ACCESS_TOKEN_LIFETIME
+    }),
+    [env.REFRESH_TOKEN_NAME]: createToken(payload, {
+      expiresIn: env.REFRESH_TOKEN_LIFETIME
+    })
+  };
+
+  await prisma.user.create({
+    data: {
+      email,
+      password: genPassword(password),
+      name,
+      uuid: genUuid(),
+      refreshToken: tokens[env.REFRESH_TOKEN_NAME]
+    }
+  });
+
+  return tokens;
 };

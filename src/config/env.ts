@@ -11,8 +11,7 @@ const envSchema = yup.object({
   HOST: yup.string().trim().required(),
   PORT: yup.number().integer().positive().required(),
 
-  JWT_PRIVATE_KEY_BLUE: yup.string().trim().max(100).required(),
-  JWT_PRIVATE_KEY_ORANGE: yup.string().trim().max(100).required(),
+  JWT_PRIVATE_KEY: yup.string().trim().max(100).required(),
 
   ACCESS_TOKEN_NAME: yup.string().trim().max(20).required(),
   ACCESS_TOKEN_LIFETIME: yup.number().integer().positive().required(),

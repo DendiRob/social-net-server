@@ -4,7 +4,7 @@ import { ErrorHandler } from '@/utils/ErrorHandler.js';
 import { MAX_EMAIL_LENGTH, MAX_PASSWORD_LENGTH } from './auth.constants.js';
 import { env } from '@/config/env.js';
 
-// import * as service from './auth.services.js';
+import * as service from './auth.services.js';
 // import { ErrorHandler } from '@/helpers/ErrorHandler.js';
 import { StatusCodes } from 'http-status-codes';
 
@@ -24,9 +24,36 @@ const registration = async (
 ): Promise<void> => {
   try {
     const { name, email, password } = req.body;
-    const newUser = await service.registartion(name, email, password);
 
-    res.status(StatusCodes.OK).json(newUser);
+    if (
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      typeof name !== 'string'
+    ) {
+      next(ErrorHandler.ForbiddenError());
+      return;
+    }
+
+    if (
+      email.length > MAX_EMAIL_LENGTH ||
+      password.length > MAX_PASSWORD_LENGTH
+    ) {
+      next(ErrorHandler.ForbiddenError());
+      return;
+    }
+
+    const tokensAfterReg = await service.registartion(name, email, password);
+    const refreshTokenName = env.REFRESH_TOKEN_NAME;
+    if (tokensAfterReg !== undefined) {
+      res.cookie(
+        refreshTokenName,
+        tokensAfterReg[refreshTokenName],
+        getCookieOptions()
+      );
+      res.status(StatusCodes.OK).json(tokensAfterReg);
+    } else {
+      console.log('error auth controller');
+    }
   } catch (error) {
     console.log(error);
   }
