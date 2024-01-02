@@ -4,7 +4,7 @@ import { genPassword, genUuid } from '@/utils/cryptoTools.js';
 import { ErrorHandler } from '@/utils/ErrorHandler.js';
 import { createToken } from '@/utils/jwtTokens.js';
 
-export const registartion = async (
+export const registration = async (
   email: string,
   password: string,
   name: string

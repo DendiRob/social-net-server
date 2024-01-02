@@ -17,20 +17,25 @@ const getCookieOptions = (remove = false) => ({
   secure: env.REFRESH_COOKIE_SECURE
 });
 
-const registration = async (
+const registration = (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
-  try {
+): void => {
+  (async () => {
     const { name, email, password } = req.body;
-
+    console.log('hello', req.body);
     if (
       typeof email !== 'string' ||
       typeof password !== 'string' ||
       typeof name !== 'string'
     ) {
-      next(ErrorHandler.ForbiddenError());
+      next(
+        ErrorHandler.ForbiddenError({
+          server: 'Какие-то данные отсутсвуют',
+          client: 'Какие-то данные отсутсвуют'
+        })
+      );
       return;
     }
 
@@ -38,11 +43,16 @@ const registration = async (
       email.length > MAX_EMAIL_LENGTH ||
       password.length > MAX_PASSWORD_LENGTH
     ) {
-      next(ErrorHandler.ForbiddenError());
+      next(
+        ErrorHandler.ForbiddenError({
+          server: 'Привышена макс длина пароля или емайла',
+          client: 'Привышена макс длина пароля или емайла'
+        })
+      );
       return;
     }
 
-    const tokensAfterReg = await service.registartion(name, email, password);
+    const tokensAfterReg = await service.registration(name, email, password);
     const refreshTokenName = env.REFRESH_TOKEN_NAME;
     if (tokensAfterReg !== undefined) {
       res.cookie(
@@ -54,9 +64,9 @@ const registration = async (
     } else {
       console.log('error auth controller');
     }
-  } catch (error) {
-    console.log(error);
-  }
+  })().catch((error) => {
+    next(error);
+  });
 };
 
 const login = (req: Request, res: Response, next: NextFunction): void => {};
@@ -65,4 +75,4 @@ const logout = (req: Request, res: Response, next: NextFunction): void => {};
 
 const refresh = (req: Request, res: Response, next: NextFunction): void => {};
 
-export default { registration, login, logout, refresh };
+export { registration, login, logout, refresh };

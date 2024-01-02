@@ -3,7 +3,7 @@ import express from 'express';
 import { env } from '@/config/env.js';
 
 import useCors from '@/config/cors.js';
-// import useRoutes from '@/routes/index.js';
+import useRoutes from '@/routes/index.js';
 import useBodyParser from '@/config/bodyParser.js';
 import useCookieParser from '@/config/cookieParser.js';
 import useCompression from '@/config/compression.js';
@@ -16,7 +16,7 @@ useCors(app);
 useCompression(app);
 useBodyParser(app);
 useCookieParser(app);
-// useRoutes(app);
+useRoutes(app);
 
 // const server = createServer(app);
 // socketIO(server);

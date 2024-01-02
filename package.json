@@ -9,7 +9,7 @@
     "lint": "eslint ./src --ext .js,.cjs,.mjs,.ts,.cts,.mts",
     "format": "prettier --write ./src",
     "start": "NODE_ENV=production node dist/index.js",
-    "dev": "tsc && tsc-alias && NODE_ENV=development node dist/index.js",
+    "dev": "tsc && tsc-alias && NODE_ENV=development node dist/src/index.js",
     "nodemon": "nodemon src/index.ts --exec \"npm run dev\""
   },
   "author": "",
@@ -45,6 +45,7 @@
     "nodemon": "^3.0.2",
     "prettier": "^3.1.1",
     "prisma": "^5.7.1",
+    "tsc-alias": "^1.8.8",
     "typescript": "^5.3.3"
   }
 }
