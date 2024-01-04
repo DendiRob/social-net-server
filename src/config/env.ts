@@ -25,7 +25,10 @@ const envSchema = yup.object({
   REFRESH_COOKIE_MAX_AGE: yup.number().integer().positive().required(),
   REFRESH_COOKIE_DOMAIN: yup.string().max(50).required(),
   REFRESH_COOKIE_HTTP_ONLY: yup.boolean().required().defined(),
-  REFRESH_COOKIE_SAME_SITE: yup.string().oneOf(['strict', 'lax']).required(),
+  REFRESH_COOKIE_SAME_SITE: yup
+    .string()
+    .oneOf(['strict', 'lax', 'none'])
+    .required(),
   REFRESH_COOKIE_SECURE: yup.boolean().required().defined(),
   REFRESH_COOKIE_PATH: yup.string().max(50).required(),
 

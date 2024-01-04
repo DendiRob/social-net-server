@@ -8,3 +8,14 @@ export const getUserByUuid = async (uuid: string | undefined) => {
     }
   });
 };
+
+export const getUserByEmail = async (email: string | undefined) => {
+  if (email !== undefined) {
+    const user = await prisma.user.findFirst({
+      where: {
+        email
+      }
+    });
+    return user;
+  }
+};

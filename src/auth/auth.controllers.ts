@@ -1,5 +1,5 @@
 import { type Request, type Response, type NextFunction } from 'express';
-
+import { validationResult } from 'express-validator';
 import { ErrorHandler } from '@/utils/ErrorHandler.js';
 import { MAX_EMAIL_LENGTH, MAX_PASSWORD_LENGTH } from './auth.constants.js';
 import { env } from '@/config/env.js';
@@ -7,14 +7,15 @@ import { env } from '@/config/env.js';
 import * as service from './auth.services.js';
 // import { ErrorHandler } from '@/helpers/ErrorHandler.js';
 import { StatusCodes } from 'http-status-codes';
-
+// при релизе все настроить
 const getCookieOptions = (remove = false) => ({
-  domain: env.REFRESH_COOKIE_DOMAIN,
-  httpOnly: env.REFRESH_COOKIE_HTTP_ONLY,
-  maxAge: remove ? 0 : env.REFRESH_COOKIE_MAX_AGE,
-  path: env.REFRESH_COOKIE_PATH,
-  sameSite: env.REFRESH_COOKIE_SAME_SITE,
-  secure: env.REFRESH_COOKIE_SECURE
+  httpOnly: false,
+  maxAge: env.REFRESH_COOKIE_MAX_AGE,
+  path: env.REFRESH_COOKIE_PATH
+  // убираем samesite в none так как он оклоняет куки без https(только во время разработки)
+  // временно ставим sameSite в таком виде так,как идет разработка
+  // sameSite: env.REFRESH_COOKIE_SAME_SITE
+  // secure: env.REFRESH_COOKIE_SECURE
 });
 
 const registration = (
@@ -24,7 +25,18 @@ const registration = (
 ): void => {
   (async () => {
     const { name, email, password } = req.body;
-    console.log('hello', req.body);
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      next(
+        ErrorHandler.ConflictError({
+          server: 'Problems with validation',
+          client: 'Problems with validation'
+        })
+      );
+      return;
+    }
+
     if (
       typeof email !== 'string' ||
       typeof password !== 'string' ||
@@ -32,8 +44,8 @@ const registration = (
     ) {
       next(
         ErrorHandler.ForbiddenError({
-          server: 'Какие-то данные отсутсвуют',
-          client: 'Какие-то данные отсутсвуют'
+          server: 'Проблемы с типами данных',
+          client: 'при регистрации что-то пошло не так'
         })
       );
       return;
@@ -45,14 +57,14 @@ const registration = (
     ) {
       next(
         ErrorHandler.ForbiddenError({
-          server: 'Привышена макс длина пароля или емайла',
-          client: 'Привышена макс длина пароля или емайла'
+          server: 'Привышена максимальная длина пароля или емайла',
+          client: 'Привышена максимальная длина пароля или емайла'
         })
       );
       return;
     }
 
-    const tokensAfterReg = await service.registration(name, email, password);
+    const tokensAfterReg = await service.registration(email, name, password);
     const refreshTokenName = env.REFRESH_TOKEN_NAME;
     if (tokensAfterReg !== undefined) {
       res.cookie(

@@ -1,7 +1,6 @@
 import prisma from 'prisma/prisma.js';
 import { env } from '@/config/env.js';
 import { genPassword, genUuid } from '@/utils/cryptoTools.js';
-import { ErrorHandler } from '@/utils/ErrorHandler.js';
 import { createToken } from '@/utils/jwtTokens.js';
 
 export const registration = async (
@@ -9,21 +8,7 @@ export const registration = async (
   password: string,
   name: string
 ) => {
-  const isUserExist = await prisma.user.findUnique({
-    where: {
-      email
-    }
-  });
-
-  if (isUserExist !== null) {
-    ErrorHandler.ConflictError({
-      server: 'This acc exist',
-      client: 'This acc exist'
-    });
-    return;
-  }
   const payload = { uuid: genUuid() };
-
   const tokens = {
     [env.ACCESS_TOKEN_NAME]: createToken(payload, {
       expiresIn: env.ACCESS_TOKEN_LIFETIME
