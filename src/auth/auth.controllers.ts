@@ -1,11 +1,11 @@
 import { type Request, type Response, type NextFunction } from 'express';
-import { validationResult } from 'express-validator';
+
+import formatErrors from '@/utils/errorFormatter.js';
 import { ErrorHandler } from '@/utils/ErrorHandler.js';
 import { MAX_EMAIL_LENGTH, MAX_PASSWORD_LENGTH } from './auth.constants.js';
 import { env } from '@/config/env.js';
 
 import * as service from './auth.services.js';
-// import { ErrorHandler } from '@/helpers/ErrorHandler.js';
 import { StatusCodes } from 'http-status-codes';
 // при релизе все настроить
 const getCookieOptions = (remove = false) => ({
@@ -26,14 +26,9 @@ const registration = (
   (async () => {
     const { name, email, password } = req.body;
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      next(
-        ErrorHandler.ConflictError({
-          server: 'Problems with validation',
-          client: 'Problems with validation'
-        })
-      );
+    const errors = formatErrors(req);
+    if (errors.length !== 0) {
+      res.status(StatusCodes.CONFLICT).json({ errors });
       return;
     }
 
