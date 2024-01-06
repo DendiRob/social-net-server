@@ -1,12 +1,14 @@
 import { type Request, type Response, type NextFunction } from 'express';
+import { StatusCodes } from 'http-status-codes';
 
 import formatErrors from '@/utils/errorFormatter.js';
 import { ErrorHandler } from '@/utils/ErrorHandler.js';
+
 import { MAX_EMAIL_LENGTH, MAX_PASSWORD_LENGTH } from './auth.constants.js';
 import { env } from '@/config/env.js';
 
 import * as service from './auth.services.js';
-import { StatusCodes } from 'http-status-codes';
+
 // при релизе все настроить
 const getCookieOptions = (remove = false) => ({
   httpOnly: false,
@@ -76,7 +78,39 @@ const registration = (
   });
 };
 
-const login = (req: Request, res: Response, next: NextFunction): void => {};
+const login = (req: Request, res: Response, next: NextFunction): void => {
+  (async () => {
+    const { email, password } = req.body;
+    const errors = formatErrors(req);
+    if (errors.length !== 0) {
+      res.status(StatusCodes.BAD_REQUEST).json({ errors });
+      return;
+    }
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      next(
+        ErrorHandler.ForbiddenError({
+          server: 'Проблемы с типами данных',
+          client: 'при регистрации что-то пошло не так'
+        })
+      );
+      return;
+    }
+    const tokens = await service.login(email, password);
+    const refreshTokenName = env.REFRESH_TOKEN_NAME;
+    if (tokens !== undefined) {
+      res.cookie(
+        refreshTokenName,
+        tokens[refreshTokenName],
+        getCookieOptions()
+      );
+      res.status(StatusCodes.OK).json(tokens);
+    } else {
+      console.log('error auth controller');
+    }
+  })().catch((e) => {
+    next(e);
+  });
+};
 
 const logout = (req: Request, res: Response, next: NextFunction): void => {};
 

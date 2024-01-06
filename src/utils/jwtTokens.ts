@@ -3,12 +3,24 @@ import jwt from 'jsonwebtoken';
 
 import { env } from '@/config/env.js';
 import { ErrorHandler } from './ErrorHandler.js';
-import { getUserByUuid } from '@/user/user.controllers.js';
+import { getUserByUuid } from '@/user/user.service.js';
 
 const privateKey = env.JWT_PRIVATE_KEY;
 // options might be used for setting expiredTime
 function createToken(payload = {}, options = {}) {
   return jwt.sign(payload, privateKey, { algorithm: 'HS256', ...options });
+}
+
+export async function genBothTokens(payload = {}) {
+  const tokens = {
+    [env.ACCESS_TOKEN_NAME]: createToken(payload, {
+      expiresIn: env.ACCESS_TOKEN_LIFETIME
+    }),
+    [env.REFRESH_TOKEN_NAME]: createToken(payload, {
+      expiresIn: env.REFRESH_TOKEN_LIFETIME
+    })
+  };
+  return tokens;
 }
 
 function decodeToken(token: string) {
@@ -19,12 +31,12 @@ function verifyToken(token: string) {
   return jwt.verify(token, privateKey);
 }
 // эта функция вызвывается перед всеми обращениями к серверу,кроме логинки и прочей темы сайта,которой не нужна авториация
-async function validateAccessToken(
+function validateAccessToken(
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> {
-  try {
+): void {
+  (async () => {
     const accessToken = req.headers['access-token'];
     // чекнуть, что приходит
     if (typeof accessToken !== 'string') {
@@ -55,17 +67,17 @@ async function validateAccessToken(
     req.id = user.id;
 
     next();
-  } catch (error) {
+  })().catch(() => {
     next(ErrorHandler.UnauthorizedError());
-  }
+  });
 }
 
-async function validateRefreshToken(
+function validateRefreshToken(
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> {
-  try {
+): void {
+  (async () => {
     const refreshToken: string = req.cookies[env.REFRESH_COOKIE_NAME];
     // TODO: заменить на клиенте хранение refresh токена в куке, и потом убрать.
     // if (refreshToken === undefined) refreshToken = req.body.refreshToken;
@@ -92,9 +104,9 @@ async function validateRefreshToken(
     req.uuid = verifyRefresh.sub as string;
 
     next();
-  } catch (e) {
+  })().catch(() => {
     next(ErrorHandler.UnauthorizedError());
-  }
+  });
 }
 
 export { validateAccessToken, validateRefreshToken, createToken, verifyToken };
