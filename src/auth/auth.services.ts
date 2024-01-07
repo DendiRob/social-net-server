@@ -55,3 +55,21 @@ export const login = async (email: string, password: string) => {
 
   return tokens;
 };
+
+export const logout = async (refresh: string) => {
+  try {
+    const user = await prisma.user.update({
+      where: {
+        refreshToken: refresh
+      },
+      data: { refreshToken: null },
+      select: {
+        id: true,
+        email: true
+      }
+    });
+    return user;
+  } catch (error) {
+    return error;
+  }
+};

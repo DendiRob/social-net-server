@@ -12,7 +12,7 @@ model User {
   email        String   @unique
   name         String?
   password     String
-  refreshToken String?
+  refreshToken String?  @unique
   uuid         String   @unique
   deleted      Boolean  @default(false)
   createdAt    DateTime @default(now())

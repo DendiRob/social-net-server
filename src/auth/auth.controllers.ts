@@ -71,7 +71,7 @@ const registration = (
       );
       res.status(StatusCodes.OK).json(tokensAfterReg);
     } else {
-      console.log('error auth controller');
+      console.log('error auth registration controller');
     }
   })().catch((error) => {
     next(error);
@@ -105,14 +105,43 @@ const login = (req: Request, res: Response, next: NextFunction): void => {
       );
       res.status(StatusCodes.OK).json(tokens);
     } else {
-      console.log('error auth controller');
+      console.log('error auth login controller');
     }
   })().catch((e) => {
     next(e);
   });
 };
 
-const logout = (req: Request, res: Response, next: NextFunction): void => {};
+const logout = (req: Request, res: Response, next: NextFunction): void => {
+  (async () => {
+    const errors = formatErrors(req);
+    if (errors.length !== 0) {
+      res.status(StatusCodes.BAD_REQUEST).json({ errors });
+      return;
+    }
+
+    const { refresh } = req.cookies;
+    if (typeof refresh !== 'string') {
+      next(
+        ErrorHandler.ForbiddenError({
+          server: 'Проблемы с типами данных',
+          client: 'при регистрации что-то пошло не так'
+        })
+      );
+      return;
+    }
+
+    const token = await service.logout(refresh);
+    if (token !== undefined) {
+      res.clearCookie('refresh');
+      res.status(StatusCodes.OK).json(token);
+    } else {
+      console.log('error auth login controller');
+    }
+  })().catch((error) => {
+    next(error);
+  });
+};
 
 const refresh = (req: Request, res: Response, next: NextFunction): void => {};
 

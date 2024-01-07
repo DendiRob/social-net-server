@@ -2,7 +2,7 @@ import { getUserByEmail } from '@/user/user.service.js';
 import { genPassword } from '@/utils/cryptoTools.js';
 import validator from 'express-validator';
 
-const { body } = validator;
+const { body, cookie } = validator;
 
 const registerGuard = [
   body('email')
@@ -59,4 +59,8 @@ const loginGuard = [
     })
 ];
 
-export { registerGuard, loginGuard };
+const logoutGuard = [
+  cookie('refresh').notEmpty().withMessage('Вы не авторизованы')
+];
+
+export { registerGuard, loginGuard, logoutGuard };
