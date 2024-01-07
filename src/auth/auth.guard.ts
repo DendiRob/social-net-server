@@ -63,4 +63,8 @@ const logoutGuard = [
   cookie('refresh').notEmpty().withMessage('Вы не авторизованы')
 ];
 
-export { registerGuard, loginGuard, logoutGuard };
+const refreshGuard = [
+  cookie('refresh').notEmpty().withMessage('Вы не авторизованы')
+];
+
+export { registerGuard, loginGuard, logoutGuard, refreshGuard };

@@ -9,6 +9,13 @@ import { env } from '@/config/env.js';
 
 import * as service from './auth.services.js';
 
+interface reqTypes {
+  email: string;
+  password: string;
+  refresh: string;
+  name: string;
+}
+
 // при релизе все настроить
 const getCookieOptions = (remove = false) => ({
   httpOnly: false,
@@ -20,33 +27,65 @@ const getCookieOptions = (remove = false) => ({
   // secure: env.REFRESH_COOKIE_SECURE
 });
 
+const setCookieAndSendTokens = (
+  tokens: any,
+  res: Response,
+  sectorMsg: string
+) => {
+  const refreshTokenName = env.REFRESH_TOKEN_NAME;
+  if (tokens !== undefined) {
+    res.cookie(
+      refreshTokenName,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      tokens[refreshTokenName],
+      getCookieOptions()
+    );
+    res.status(StatusCodes.OK).json(tokens);
+  } else {
+    console.log(`error auth ${sectorMsg} controller`);
+  }
+};
+
+const typesValidator = (fields: string[], next: NextFunction) => {
+  let hasError = false;
+  fields.forEach((field) => {
+    if (typeof field !== 'string') {
+      hasError = true;
+    }
+  });
+
+  if (hasError) {
+    next(
+      ErrorHandler.ForbiddenError({
+        server: 'Проблемы с типами данных',
+        client: 'Непредвиденные проблемы с данными'
+      })
+    );
+    return true;
+  } else {
+    return false;
+  }
+};
+
+const requestValidator = (req: Request, res: Response) => {
+  const errors = formatErrors(req);
+  if (errors.length !== 0) {
+    res.status(StatusCodes.CONFLICT).json({ errors });
+    return true;
+  }
+  return false;
+};
+
 const registration = (
   req: Request,
   res: Response,
   next: NextFunction
 ): void => {
   (async () => {
-    const { name, email, password } = req.body;
+    const { name, email, password }: Omit<reqTypes, 'refresh'> = req.body;
 
-    const errors = formatErrors(req);
-    if (errors.length !== 0) {
-      res.status(StatusCodes.CONFLICT).json({ errors });
-      return;
-    }
-
-    if (
-      typeof email !== 'string' ||
-      typeof password !== 'string' ||
-      typeof name !== 'string'
-    ) {
-      next(
-        ErrorHandler.ForbiddenError({
-          server: 'Проблемы с типами данных',
-          client: 'при регистрации что-то пошло не так'
-        })
-      );
-      return;
-    }
+    if (requestValidator(req, res)) return;
+    if (typesValidator([email, password, name], next)) return;
 
     if (
       email.length > MAX_EMAIL_LENGTH ||
@@ -62,17 +101,7 @@ const registration = (
     }
 
     const tokensAfterReg = await service.registration(email, name, password);
-    const refreshTokenName = env.REFRESH_TOKEN_NAME;
-    if (tokensAfterReg !== undefined) {
-      res.cookie(
-        refreshTokenName,
-        tokensAfterReg[refreshTokenName],
-        getCookieOptions()
-      );
-      res.status(StatusCodes.OK).json(tokensAfterReg);
-    } else {
-      console.log('error auth registration controller');
-    }
+    setCookieAndSendTokens(tokensAfterReg, res, 'registration');
   })().catch((error) => {
     next(error);
   });
@@ -80,33 +109,14 @@ const registration = (
 
 const login = (req: Request, res: Response, next: NextFunction): void => {
   (async () => {
-    const { email, password } = req.body;
-    const errors = formatErrors(req);
-    if (errors.length !== 0) {
-      res.status(StatusCodes.BAD_REQUEST).json({ errors });
-      return;
-    }
-    if (typeof email !== 'string' || typeof password !== 'string') {
-      next(
-        ErrorHandler.ForbiddenError({
-          server: 'Проблемы с типами данных',
-          client: 'при регистрации что-то пошло не так'
-        })
-      );
-      return;
-    }
+    const { email, password }: Omit<reqTypes, 'refresh' | 'name'> = req.body;
+
+    if (requestValidator(req, res)) return;
+    if (typesValidator([email, password], next)) return;
+
     const tokens = await service.login(email, password);
-    const refreshTokenName = env.REFRESH_TOKEN_NAME;
-    if (tokens !== undefined) {
-      res.cookie(
-        refreshTokenName,
-        tokens[refreshTokenName],
-        getCookieOptions()
-      );
-      res.status(StatusCodes.OK).json(tokens);
-    } else {
-      console.log('error auth login controller');
-    }
+
+    setCookieAndSendTokens(tokens, res, 'login');
   })().catch((e) => {
     next(e);
   });
@@ -114,35 +124,35 @@ const login = (req: Request, res: Response, next: NextFunction): void => {
 
 const logout = (req: Request, res: Response, next: NextFunction): void => {
   (async () => {
-    const errors = formatErrors(req);
-    if (errors.length !== 0) {
-      res.status(StatusCodes.BAD_REQUEST).json({ errors });
-      return;
-    }
+    const { refresh }: Pick<reqTypes, 'refresh'> = req.cookies;
 
-    const { refresh } = req.cookies;
-    if (typeof refresh !== 'string') {
-      next(
-        ErrorHandler.ForbiddenError({
-          server: 'Проблемы с типами данных',
-          client: 'при регистрации что-то пошло не так'
-        })
-      );
-      return;
-    }
+    if (requestValidator(req, res)) return;
+    if (typesValidator([refresh], next)) return;
 
     const token = await service.logout(refresh);
     if (token !== undefined) {
       res.clearCookie('refresh');
       res.status(StatusCodes.OK).json(token);
     } else {
-      console.log('error auth login controller');
+      console.log('error auth logout controller');
     }
   })().catch((error) => {
     next(error);
   });
 };
 
-const refresh = (req: Request, res: Response, next: NextFunction): void => {};
+const refresh = (req: Request, res: Response, next: NextFunction): void => {
+  (async () => {
+    const { refresh }: Pick<reqTypes, 'refresh'> = req.cookies;
+
+    if (requestValidator(req, res)) return;
+    if (typesValidator([refresh], next)) return;
+
+    const tokens = await service.refresh(refresh);
+    setCookieAndSendTokens(tokens, res, 'logout');
+  })().catch((error) => {
+    next(error);
+  });
+};
 
 export { registration, login, logout, refresh };

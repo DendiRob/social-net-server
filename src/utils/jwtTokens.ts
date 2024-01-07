@@ -72,41 +72,4 @@ function validateAccessToken(
   });
 }
 
-function validateRefreshToken(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  (async () => {
-    const refreshToken: string = req.cookies[env.REFRESH_COOKIE_NAME];
-    // TODO: заменить на клиенте хранение refresh токена в куке, и потом убрать.
-    // if (refreshToken === undefined) refreshToken = req.body.refreshToken;
-
-    if (refreshToken === undefined) {
-      next(ErrorHandler.UnauthorizedError());
-      return;
-    }
-
-    const decodedToken = decodeToken(refreshToken);
-    if (decodedToken === null) {
-      next(ErrorHandler.UnauthorizedError());
-      return;
-    }
-
-    const user = await getUserByUuid(decodedToken.sub as string);
-    if (user === null) {
-      next(ErrorHandler.UnauthorizedError());
-      return;
-    }
-
-    const verifyRefresh = verifyToken(refreshToken);
-
-    req.uuid = verifyRefresh.sub as string;
-
-    next();
-  })().catch(() => {
-    next(ErrorHandler.UnauthorizedError());
-  });
-}
-
-export { validateAccessToken, validateRefreshToken, createToken, verifyToken };
+export { validateAccessToken, createToken, verifyToken };
