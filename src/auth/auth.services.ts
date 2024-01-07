@@ -44,6 +44,14 @@ export const login = async (email: string, password: string) => {
   }
   const payload = { uuid: user.uuid };
   const tokens = await genBothTokens(payload);
+  await prisma.user.update({
+    where: {
+      uuid: user.uuid
+    },
+    data: {
+      refreshToken: tokens[env.REFRESH_TOKEN_NAME]
+    }
+  });
 
   return tokens;
 };
