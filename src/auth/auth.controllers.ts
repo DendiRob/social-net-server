@@ -26,21 +26,17 @@ const getCookieOptions = (remove = false) => ({
   // sameSite: env.REFRESH_COOKIE_SAME_SITE
   // secure: env.REFRESH_COOKIE_SECURE
 });
-
-const setCookieAndSendTokens = (
-  tokens: any,
-  res: Response,
-  sectorMsg: string
-) => {
+// убрать any
+const setCookieAndSendData = (data: any, res: Response, sectorMsg: string) => {
   const refreshTokenName = env.REFRESH_TOKEN_NAME;
-  if (tokens !== undefined) {
+  if (data !== undefined) {
     res.cookie(
       refreshTokenName,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      tokens[refreshTokenName],
+      data[refreshTokenName],
       getCookieOptions()
     );
-    res.status(StatusCodes.OK).json(tokens);
+    res.status(StatusCodes.OK).json(data);
   } else {
     console.log(`error auth ${sectorMsg} controller`);
   }
@@ -100,8 +96,8 @@ const registration = (
       return;
     }
 
-    const tokensAfterReg = await service.registration(email, name, password);
-    setCookieAndSendTokens(tokensAfterReg, res, 'registration');
+    const newData = await service.registration(email, name, password);
+    setCookieAndSendData(newData, res, 'registration');
   })().catch((error) => {
     next(error);
   });
@@ -114,9 +110,9 @@ const login = (req: Request, res: Response, next: NextFunction): void => {
     if (requestValidator(req, res)) return;
     if (typesValidator([email, password], next)) return;
 
-    const tokens = await service.login(email, password);
+    const newData = await service.login(email, password);
 
-    setCookieAndSendTokens(tokens, res, 'login');
+    setCookieAndSendData(newData, res, 'login');
   })().catch((e) => {
     next(e);
   });
@@ -148,8 +144,8 @@ const refresh = (req: Request, res: Response, next: NextFunction): void => {
     if (requestValidator(req, res)) return;
     if (typesValidator([refresh], next)) return;
 
-    const tokens = await service.refresh(refresh);
-    setCookieAndSendTokens(tokens, res, 'logout');
+    const newData = await service.refresh(refresh);
+    setCookieAndSendData(newData, res, 'logout');
   })().catch((error) => {
     next(error);
   });

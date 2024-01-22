@@ -32,17 +32,23 @@ export const registration = async (
   const payload = { uuid: userUuid };
   const tokens = await genBothTokens(payload);
 
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       email,
       password: genPassword(password),
       name,
       uuid: userUuid,
       refreshToken: tokens[env.REFRESH_TOKEN_NAME]
+    },
+    select: {
+      email: true,
+      name: true,
+      uuid: true,
+      id: true
     }
   });
 
-  return tokens;
+  return { ...tokens, ...user };
 };
 
 export const login = async (email: string, password: string) => {
