@@ -68,8 +68,15 @@ export const login = async (email: string, password: string) => {
     return;
   }
 
+  const authUserData = {
+    email: user.email,
+    name: user.name,
+    uuid: user.uuid,
+    id: user.id
+  };
+
   const tokens = await genAndUpdateUserTokens(user.uuid);
-  return tokens;
+  return { ...tokens, ...authUserData };
 };
 
 export const logout = async (refresh: string) => {
