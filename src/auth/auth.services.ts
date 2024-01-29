@@ -29,7 +29,7 @@ export const registration = async (
   name: string
 ) => {
   const userUuid = genUuid();
-  const payload = { uuid: userUuid };
+  const payload = { sub: userUuid };
   const tokens = await genBothTokens(payload);
 
   const user = await prisma.user.create({

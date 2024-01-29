@@ -38,13 +38,13 @@ function validateAccessToken(
 ): void {
   (async () => {
     const accessToken = req.headers['access-token'];
-    // чекнуть, что приходит
     if (typeof accessToken !== 'string') {
       next(ErrorHandler.UnauthorizedError());
       return;
     }
 
-    const decodedToken = decodeToken(accessToken);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    const decodedToken = decodeToken(JSON.parse(accessToken)); // TODO: разобраться с парсингом джсонов,почему-то автоматом не делается
     if (decodedToken === null) {
       next(ErrorHandler.UnauthorizedError());
       return;
@@ -59,8 +59,8 @@ function validateAccessToken(
       );
       return;
     }
-
-    const verifyAccess = verifyToken(accessToken);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    const verifyAccess = verifyToken(JSON.parse(accessToken));
 
     // added new data to request
     req.uuid = verifyAccess.sub as string;
