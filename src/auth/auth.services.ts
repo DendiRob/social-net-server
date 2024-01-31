@@ -1,16 +1,12 @@
 import prisma from 'prisma/prisma.js';
 import { env } from '@/config/env.js';
 import { genPassword, genUuid } from '@/utils/cryptoTools.js';
-import { genBothTokens, verifyToken } from '@/utils/jwtTokens.js';
+import { decodeToken, genBothTokens } from '@/utils/jwtTokens.js';
 import { getUserByEmail } from '@/user/user.service.js';
 import { ErrorHandler } from '@/utils/ErrorHandler.js';
 
-const validateRefreshToken = (refresh: string) => {
-  return verifyToken(refresh);
-};
-
 const genAndUpdateUserTokens = async (uuid: string) => {
-  const payload = { uuid };
+  const payload = { sub: uuid };
   const tokens = await genBothTokens(payload);
   await prisma.user.update({
     where: {
@@ -98,22 +94,11 @@ export const logout = async (refresh: string) => {
 };
 
 export const refresh = async (refresh: string) => {
-  const validateToken = validateRefreshToken(refresh);
-  console.log(validateToken);
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  if (!validateToken) {
-    ErrorHandler.UnauthorizedError({
-      server: 'Невалидный токен',
-      client: 'Пожайлуста, попробуйте войти заного'
-    });
-    return;
-  }
+  const decodedToken = decodeToken(refresh);
+
   const user = await prisma.user.findUnique({
     where: {
-      refreshToken: refresh
-    },
-    select: {
-      uuid: true
+      uuid: decodedToken?.sub as string
     }
   });
   if (user === null) {

@@ -1,6 +1,6 @@
 import type { Express } from 'express';
 
-import { validateAccessToken } from '@/utils/jwtTokens.js';
+import { validateAccessToken } from '@/auth/auth.controllers.js';
 import authRoutes from '@/auth/auth.routes.js';
 import userRoutes from '@/user/user.routes.js';
 

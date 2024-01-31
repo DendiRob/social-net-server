@@ -8,6 +8,8 @@ import { MAX_EMAIL_LENGTH, MAX_PASSWORD_LENGTH } from './auth.constants.js';
 import { env } from '@/config/env.js';
 
 import * as service from './auth.services.js';
+import { decodeToken, verifyToken } from '@/utils/jwtTokens.js';
+import { getUserByUuid } from '@/user/user.service.js';
 
 interface reqTypes {
   email: string;
@@ -71,6 +73,46 @@ const requestValidator = (req: Request, res: Response) => {
   }
   return false;
 };
+
+function validateAccessToken(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  (async () => {
+    const accessToken = req.headers['access-token'];
+    if (typeof accessToken !== 'string') {
+      next(ErrorHandler.UnauthorizedError());
+      return;
+    }
+
+    const decodedToken = decodeToken(accessToken);
+    if (decodedToken === null) {
+      next(ErrorHandler.UnauthorizedError());
+      return;
+    }
+
+    // проверяем сущ такой юзер
+    const user = await getUserByUuid(decodedToken.sub as string);
+    if (user === null) {
+      next(
+        ErrorHandler.UnauthorizedError({
+          client: 'Такой аккаунт не существует'
+        })
+      );
+      return;
+    }
+    const verifyAccess = verifyToken(accessToken);
+
+    // added new data to request
+    req.uuid = verifyAccess.sub as string;
+    req.id = user.id;
+
+    next();
+  })().catch(() => {
+    next(ErrorHandler.UnauthorizedError());
+  });
+}
 
 const registration = (
   req: Request,
@@ -144,11 +186,13 @@ const refresh = (req: Request, res: Response, next: NextFunction): void => {
     if (requestValidator(req, res)) return;
     if (typesValidator([refresh], next)) return;
 
+    verifyToken(refresh);
+
     const newData = await service.refresh(refresh);
-    setCookieAndSendData(newData, res, 'logout');
+    setCookieAndSendData(newData, res, 'refresh');
   })().catch((error) => {
     next(error);
   });
 };
 
-export { registration, login, logout, refresh };
+export { registration, login, logout, refresh, validateAccessToken };
