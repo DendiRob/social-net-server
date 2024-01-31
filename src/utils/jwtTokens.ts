@@ -30,7 +30,7 @@ function decodeToken(token: string) {
 function verifyToken(token: string) {
   return jwt.verify(token, privateKey);
 }
-// эта функция вызвывается перед всеми обращениями к серверу,кроме логинки и прочей темы сайта,которой не нужна авториация
+
 function validateAccessToken(
   req: Request,
   res: Response,
@@ -43,12 +43,12 @@ function validateAccessToken(
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    const decodedToken = decodeToken(JSON.parse(accessToken)); // TODO: разобраться с парсингом джсонов,почему-то автоматом не делается
+    const decodedToken = decodeToken(accessToken);
     if (decodedToken === null) {
       next(ErrorHandler.UnauthorizedError());
       return;
     }
+
     // проверяем сущ такой юзер
     const user = await getUserByUuid(decodedToken.sub as string);
     if (user === null) {
@@ -59,8 +59,8 @@ function validateAccessToken(
       );
       return;
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    const verifyAccess = verifyToken(JSON.parse(accessToken));
+
+    const verifyAccess = verifyToken(accessToken);
 
     // added new data to request
     req.uuid = verifyAccess.sub as string;
