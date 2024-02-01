@@ -9,6 +9,7 @@ import useCookieParser from '@/config/cookieParser.js';
 import useCompression from '@/config/compression.js';
 
 const app = express();
+
 app.disable('x-powered-by');
 app.use(express.static('public'));
 

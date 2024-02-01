@@ -1,22 +1,16 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 
-import formatErrors from '@/utils/errorFormatter.js';
 import { ErrorHandler } from '@/utils/ErrorHandler.js';
 
 import { MAX_EMAIL_LENGTH, MAX_PASSWORD_LENGTH } from './auth.constants.js';
 import { env } from '@/config/env.js';
 
 import * as service from './auth.services.js';
+import * as schema from './auth.schemas.js';
 import { decodeToken, verifyToken } from '@/utils/jwtTokens.js';
 import { getUserByUuid } from '@/users/user.service.js';
-
-interface reqTypes {
-  email: string;
-  password: string;
-  refresh: string;
-  name: string;
-}
+import { validationOptions } from '@/utils/yupOptions.js';
 
 // при релизе все настроить
 const getCookieOptions = (remove = false) => ({
@@ -44,36 +38,6 @@ const setCookieAndSendData = (data: any, res: Response, sectorMsg: string) => {
   }
 };
 
-const typesValidator = (fields: string[], next: NextFunction) => {
-  let hasError = false;
-  fields.forEach((field) => {
-    if (typeof field !== 'string') {
-      hasError = true;
-    }
-  });
-
-  if (hasError) {
-    next(
-      ErrorHandler.ForbiddenError({
-        server: 'Проблемы с типами данных',
-        client: 'Непредвиденные проблемы с данными'
-      })
-    );
-    return true;
-  } else {
-    return false;
-  }
-};
-
-const requestValidator = (req: Request, res: Response) => {
-  const errors = formatErrors(req);
-  if (errors.length !== 0) {
-    res.status(StatusCodes.CONFLICT).json({ errors });
-    return true;
-  }
-  return false;
-};
-
 function validateAccessToken(
   req: Request,
   res: Response,
@@ -92,7 +56,6 @@ function validateAccessToken(
       return;
     }
 
-    // проверяем сущ такой юзер
     const user = await getUserByUuid(decodedToken.sub as string);
     if (user === null) {
       next(
@@ -104,13 +67,16 @@ function validateAccessToken(
     }
     const verifyAccess = verifyToken(accessToken);
 
-    // added new data to request
     req.uuid = verifyAccess.sub as string;
     req.id = user.id;
 
     next();
   })().catch(() => {
-    next(ErrorHandler.UnauthorizedError());
+    next(
+      ErrorHandler.UnauthorizedError({
+        server: 'Валидация токена'
+      })
+    );
   });
 }
 
@@ -120,10 +86,10 @@ const registration = (
   next: NextFunction
 ): void => {
   (async () => {
-    const { name, email, password }: Omit<reqTypes, 'refresh'> = req.body;
-
-    if (requestValidator(req, res)) return;
-    if (typesValidator([email, password, name], next)) return;
+    const { name, email, password } = await schema.registerGuard.validate(
+      req.body,
+      validationOptions
+    );
 
     if (
       email.length > MAX_EMAIL_LENGTH ||
@@ -147,10 +113,10 @@ const registration = (
 
 const login = (req: Request, res: Response, next: NextFunction): void => {
   (async () => {
-    const { email, password }: Omit<reqTypes, 'refresh' | 'name'> = req.body;
-
-    if (requestValidator(req, res)) return;
-    if (typesValidator([email, password], next)) return;
+    const { email, password } = await schema.loginGuard.validate(
+      req.body,
+      validationOptions
+    );
 
     const newData = await service.login(email, password);
 
@@ -162,12 +128,13 @@ const login = (req: Request, res: Response, next: NextFunction): void => {
 
 const logout = (req: Request, res: Response, next: NextFunction): void => {
   (async () => {
-    const { refresh }: Pick<reqTypes, 'refresh'> = req.cookies;
-
-    if (requestValidator(req, res)) return;
-    if (typesValidator([refresh], next)) return;
+    const { refresh } = await schema.refreshGuard.validate(
+      req.cookies,
+      validationOptions
+    );
 
     const token = await service.logout(refresh);
+
     if (token !== undefined) {
       res.clearCookie('refresh');
       res.status(StatusCodes.OK).json(token);
@@ -181,10 +148,10 @@ const logout = (req: Request, res: Response, next: NextFunction): void => {
 
 const refresh = (req: Request, res: Response, next: NextFunction): void => {
   (async () => {
-    const { refresh }: Pick<reqTypes, 'refresh'> = req.cookies;
-
-    if (requestValidator(req, res)) return;
-    if (typesValidator([refresh], next)) return;
+    const { refresh } = await schema.refreshGuard.validate(
+      req.cookies,
+      validationOptions
+    );
 
     verifyToken(refresh);
 
