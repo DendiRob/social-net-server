@@ -1,4 +1,4 @@
-import { getUserByEmail } from '@/user/user.service.js';
+import { getUserByEmail } from '@/users/user.service.js';
 import { genPassword } from '@/utils/cryptoTools.js';
 import validator from 'express-validator';
 

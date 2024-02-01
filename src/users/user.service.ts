@@ -24,3 +24,15 @@ export const getUserByEmail = async (email: string | undefined) => {
 export const getAllUsers = async () => {
   return await prisma.user.findMany();
 };
+
+export const getViewer = async (uuid: string) => {
+  return await prisma.user.findUnique({
+    where: { uuid },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      uuid: true
+    }
+  });
+};

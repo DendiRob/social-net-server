@@ -2,7 +2,7 @@ import prisma from 'prisma/prisma.js';
 import { env } from '@/config/env.js';
 import { genPassword, genUuid } from '@/utils/cryptoTools.js';
 import { decodeToken, genBothTokens } from '@/utils/jwtTokens.js';
-import { getUserByEmail } from '@/user/user.service.js';
+import { getUserByEmail } from '@/users/user.service.js';
 import { ErrorHandler } from '@/utils/ErrorHandler.js';
 
 const genAndUpdateUserTokens = async (uuid: string) => {

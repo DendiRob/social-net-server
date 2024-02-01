@@ -9,7 +9,7 @@ import { env } from '@/config/env.js';
 
 import * as service from './auth.services.js';
 import { decodeToken, verifyToken } from '@/utils/jwtTokens.js';
-import { getUserByUuid } from '@/user/user.service.js';
+import { getUserByUuid } from '@/users/user.service.js';
 
 interface reqTypes {
   email: string;
