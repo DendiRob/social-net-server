@@ -8,13 +8,31 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
   name         String?
   password     String
-  refreshToken String?  @unique
-  uuid         String   @unique
-  deleted      Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  refreshToken String?       @unique
+  uuid         String        @unique
+  deleted      Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  userProfile  userProfile[]
+
+  @@map("users")
+}
+
+model userProfile {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  firstName  String?   @db.VarChar(255)
+  secondName String?   @db.VarChar(255)
+  thirdName  String?   @db.VarChar(255)
+  aboutMe    String?   @db.Text
+  birthday   DateTime? @db.Date
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@map("userProfile")
 }

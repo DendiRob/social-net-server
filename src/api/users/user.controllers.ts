@@ -1,5 +1,5 @@
 import { type Request, type Response, type NextFunction } from 'express';
-import * as service from '@/users/user.service.js';
+import * as service from '@/api/users/user.service.js';
 import { StatusCodes } from 'http-status-codes';
 
 const getViewer = (req: Request, res: Response, next: NextFunction): void => {

@@ -1,6 +1,8 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 
+import multer from 'multer';
+
 import { ErrorHandler } from '@/utils/ErrorHandler.js';
 
 import { MAX_EMAIL_LENGTH, MAX_PASSWORD_LENGTH } from './auth.constants.js';
@@ -9,29 +11,52 @@ import { env } from '@/config/env.js';
 import * as service from './auth.services.js';
 import * as schema from './auth.schemas.js';
 import { decodeToken, verifyToken } from '@/utils/jwtTokens.js';
-import { getUserByUuid } from '@/users/user.service.js';
+import { getUserByUuid } from '@/api/users/user.service.js';
 import { validationOptions } from '@/utils/yupOptions.js';
+import type { ISendCockiesAndTokens } from './auth.types.js';
 
-// при релизе все настроить
+// TODO: при релизе все настроить
 const getCookieOptions = (remove = false) => ({
   httpOnly: false,
   maxAge: env.REFRESH_COOKIE_MAX_AGE,
   path: env.REFRESH_COOKIE_PATH
   // убираем samesite в none так как он оклоняет куки без https(только во время разработки)
-  // временно ставим sameSite в таком виде так,как идет разработка
   // sameSite: env.REFRESH_COOKIE_SAME_SITE
   // secure: env.REFRESH_COOKIE_SECURE
 });
-// убрать any
-const setCookieAndSendData = (data: any, res: Response, sectorMsg: string) => {
+
+const upload = multer();
+
+const useMulter = async (req: Request, res: Response): Promise<Request> => {
+  return await new Promise((resolve, reject) => {
+    const multer = upload.fields([
+      { name: 'confPassword' },
+      { name: 'password' },
+      { name: 'name' },
+      { name: 'email' },
+      { name: 'file', maxCount: 1 }
+    ]);
+
+    multer(req, res, (error) => {
+      if (error as boolean) {
+        reject(error);
+        return;
+      }
+
+      resolve(req);
+    });
+  });
+};
+
+const setCookieAndSendData = (
+  data: ISendCockiesAndTokens,
+  res: Response,
+  sectorMsg: string
+) => {
   const refreshTokenName = env.REFRESH_TOKEN_NAME;
+
   if (data !== undefined) {
-    res.cookie(
-      refreshTokenName,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      data[refreshTokenName],
-      getCookieOptions()
-    );
+    res.cookie(refreshTokenName, data.refresh, getCookieOptions());
     res.status(StatusCodes.OK).json(data);
   } else {
     console.log(`error auth ${sectorMsg} controller`);
@@ -86,11 +111,13 @@ const registration = (
   next: NextFunction
 ): void => {
   (async () => {
+    const request = await useMulter(req, res);
+
     const { name, email, password } = await schema.registerGuard.validate(
-      req.body,
+      request.body,
       validationOptions
     );
-
+    console.log(request.files);
     if (
       email.length > MAX_EMAIL_LENGTH ||
       password.length > MAX_PASSWORD_LENGTH
@@ -105,7 +132,7 @@ const registration = (
     }
 
     const newData = await service.registration(email, name, password);
-    setCookieAndSendData(newData, res, 'registration');
+    setCookieAndSendData(newData as ISendCockiesAndTokens, res, 'registration');
   })().catch((error) => {
     next(error);
   });
@@ -120,7 +147,7 @@ const login = (req: Request, res: Response, next: NextFunction): void => {
 
     const newData = await service.login(email, password);
 
-    setCookieAndSendData(newData, res, 'login');
+    setCookieAndSendData(newData as ISendCockiesAndTokens, res, 'login');
   })().catch((e) => {
     next(e);
   });
@@ -156,7 +183,7 @@ const refresh = (req: Request, res: Response, next: NextFunction): void => {
     verifyToken(refresh);
 
     const newData = await service.refresh(refresh);
-    setCookieAndSendData(newData, res, 'refresh');
+    setCookieAndSendData(newData as ISendCockiesAndTokens, res, 'refresh');
   })().catch((error) => {
     next(error);
   });

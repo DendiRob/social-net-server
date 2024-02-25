@@ -1,6 +1,6 @@
 import * as yup from 'yup';
 
-import { getUserByEmail } from '@/users/user.service.js';
+import { getUserByEmail } from '@/api/users/user.service.js';
 import { genPassword } from '@/utils/cryptoTools.js';
 
 export const listMimeTypes = yup.object({
@@ -22,7 +22,11 @@ export const registerGuard = yup.object({
       }
     ),
   password: yup.string().required('Требуется пароль'),
-  name: yup.string().required('Требуется указать ваше имя')
+  name: yup.string().required('Требуется указать ваше имя'),
+  confPassword: yup
+    .string()
+    .oneOf([yup.ref('password'), undefined], 'Пароли не совпадают')
+    .required()
 });
 
 export const loginGuard = yup.object({
