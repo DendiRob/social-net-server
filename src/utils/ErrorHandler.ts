@@ -2,14 +2,14 @@ import { StatusCodes } from 'http-status-codes';
 
 interface IParams {
   server?: string;
-  client?: string;
+  client?: string | string[];
 }
 
 export class ErrorHandler extends Error {
   constructor(
     public readonly status: number,
     message: string,
-    public readonly payload?: string
+    public readonly payload?: string | string[]
   ) {
     super(message);
   }

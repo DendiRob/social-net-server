@@ -125,7 +125,7 @@ const registration = (
       next(
         ErrorHandler.ForbiddenError({
           server: 'Привышена максимальная длина пароля или емайла',
-          client: 'Привышена максимальная длина пароля или емайла'
+          client: ['Привышена максимальная длина пароля или емайла']
         })
       );
       return;

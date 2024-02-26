@@ -53,10 +53,22 @@ export const registration = async (
         userId: userData.id
       }
     });
-    // TODO: проверка на мим тип
+
     // DEPLOY: поменять на линукс filesystem
     if (files.avatar !== undefined) {
       const avatar = files.avatar[0];
+
+      const checkMimeType = await tx.mimeTypes.findFirst({
+        where: { fileType: 'image', type: avatar.mimetype }
+      });
+      if (checkMimeType === null) {
+        return await Promise.reject(
+          ErrorHandler.BadRequestError({
+            client: ['Запрещенный тип аватарки']
+          })
+        );
+      }
+
       const createdFile = await tx.userProfileFiles.create({
         data: {
           userProfileId: profileData.id,
