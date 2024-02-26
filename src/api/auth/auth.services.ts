@@ -82,7 +82,8 @@ export const registration = async (
         }
       });
 
-      const foldersPath = env.DST_FILES_PATH + '\\user\\profile\\avatar';
+      const foldersPath =
+        env.DST_FILES_PATH + `\\users\\${userData.id}\\profile\\avatar`;
 
       await fileController.writeFile({
         dirPath: foldersPath,
