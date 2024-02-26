@@ -15,7 +15,7 @@ import { getUserByUuid } from '@/api/users/user.service.js';
 import { validationOptions } from '@/utils/yupOptions.js';
 import type { ISendCockiesAndTokens } from './auth.types.js';
 
-// TODO: при релизе все настроить
+// DEPLOY: при релизе все настроить
 const getCookieOptions = (remove = false) => ({
   httpOnly: false,
   maxAge: env.REFRESH_COOKIE_MAX_AGE,

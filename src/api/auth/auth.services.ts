@@ -1,9 +1,11 @@
 import prisma from 'prisma/prisma.js';
+
 import { env } from '@/config/env.js';
 import { genPassword, genUuid } from '@/utils/cryptoTools.js';
 import { decodeToken, genBothTokens } from '@/utils/jwtTokens.js';
 import { getUserByEmail } from '@/api/users/user.service.js';
 import { ErrorHandler } from '@/utils/ErrorHandler.js';
+import * as fileController from '@/utils/useFileController.js';
 
 const genAndUpdateUserTokens = async (uuid: string) => {
   const payload = { sub: uuid };
@@ -23,14 +25,13 @@ export const registration = async (
   email: string,
   password: string,
   name: string,
-  files?: any
+  files: any
 ) => {
   const userUuid = genUuid();
   const payload = { sub: userUuid };
   const tokens = await genBothTokens(payload);
 
-  // console.log(files.avatar[0]);
-  const [user, userProfile] = await prisma.$transaction(async (tx) => {
+  const user = await prisma.$transaction(async (tx) => {
     const userData = await tx.user.create({
       data: {
         email,
@@ -47,12 +48,38 @@ export const registration = async (
       }
     });
 
-    const profileData = tx.userProfile.create({
+    const profileData = await tx.userProfile.create({
       data: {
         userId: userData.id
       }
     });
-    return [userData, profileData];
+    // TODO: проверка на мим тип
+    // DEPLOY: поменять на линукс filesystem
+    if (files.avatar !== undefined) {
+      const avatar = files.avatar[0];
+      const createdFile = await tx.userProfileFiles.create({
+        data: {
+          userProfileId: profileData.id,
+          isProfileAvatar: true,
+          name: avatar.originalname,
+          mimetype: avatar.mimetype,
+          size: avatar.size
+        },
+        select: {
+          id: true
+        }
+      });
+
+      const foldersPath = env.DST_FILES_PATH + '\\user\\profile\\avatar';
+
+      await fileController.writeFile({
+        dirPath: foldersPath,
+        fileName: createdFile.id,
+        content: avatar.buffer
+      });
+    }
+
+    return userData;
   });
 
   return { ...tokens, ...user };
