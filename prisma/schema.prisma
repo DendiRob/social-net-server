@@ -23,16 +23,31 @@ model User {
 }
 
 model userProfile {
-  id         Int       @id @default(autoincrement())
-  userId     Int
-  firstName  String?   @db.VarChar(255)
-  secondName String?   @db.VarChar(255)
-  thirdName  String?   @db.VarChar(255)
-  aboutMe    String?   @db.Text
-  birthday   DateTime? @db.Date
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  user       User      @relation(fields: [userId], references: [id])
+  id           Int                @id @default(autoincrement())
+  userId       Int
+  firstName    String?            @db.VarChar(255)
+  secondName   String?            @db.VarChar(255)
+  thirdName    String?            @db.VarChar(255)
+  aboutMe      String?            @db.Text
+  birthday     DateTime?          @db.Date
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  user         User               @relation(fields: [userId], references: [id])
+  profileFiles userProfileFiles[]
 
   @@map("userProfile")
+}
+
+model userProfileFiles {
+  id              Int         @id @default(autoincrement())
+  userProfileId   Int
+  isProfileAvatar Boolean?
+  name            String      @db.VarChar(255)
+  mimetype        String      @db.VarChar(255)
+  size            Int
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  userProfile     userProfile @relation(fields: [userProfileId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  @@map("userProfileFiles")
 }
