@@ -7,6 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model MimeTypes {
+  type        String  @id @db.VarChar(100)
+  fileType    String  @db.VarChar(20)
+  description String? @db.VarChar(100)
+
+  @@index([fileType])
+  @@map("mimeTypes")
+}
+
 model User {
   id           Int           @id @default(autoincrement())
   email        String        @unique

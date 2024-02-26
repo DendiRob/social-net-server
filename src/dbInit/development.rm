@@ -1,0 +1,4 @@
+для запуска бд
+npx prisma migrate reset
+npx prisma db push
+node ./src/dbInit/seed.js 
