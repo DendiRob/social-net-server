@@ -22,11 +22,14 @@ const genAndUpdateUserTokens = async (uuid: string) => {
 export const registration = async (
   email: string,
   password: string,
-  name: string
+  name: string,
+  files?: any
 ) => {
   const userUuid = genUuid();
   const payload = { sub: userUuid };
   const tokens = await genBothTokens(payload);
+
+  console.log(files.avatar[0]);
 
   const user = await prisma.user.create({
     data: {

@@ -34,7 +34,7 @@ const useMulter = async (req: Request, res: Response): Promise<Request> => {
       { name: 'password' },
       { name: 'name' },
       { name: 'email' },
-      { name: 'file', maxCount: 1 }
+      { name: 'avatar', maxCount: 1 }
     ]);
 
     multer(req, res, (error) => {
@@ -59,7 +59,7 @@ const setCookieAndSendData = (
     res.cookie(refreshTokenName, data.refresh, getCookieOptions());
     res.status(StatusCodes.OK).json(data);
   } else {
-    console.log(`error auth ${sectorMsg} controller`);
+    res.sendStatus(StatusCodes.UNAUTHORIZED);
   }
 };
 
@@ -117,7 +117,7 @@ const registration = (
       request.body,
       validationOptions
     );
-    console.log(request.files);
+
     if (
       email.length > MAX_EMAIL_LENGTH ||
       password.length > MAX_PASSWORD_LENGTH
@@ -131,7 +131,12 @@ const registration = (
       return;
     }
 
-    const newData = await service.registration(email, name, password);
+    const newData = await service.registration(
+      email,
+      name,
+      password,
+      request.files
+    );
     setCookieAndSendData(newData as ISendCockiesAndTokens, res, 'registration');
   })().catch((error) => {
     next(error);
