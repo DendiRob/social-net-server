@@ -19,9 +19,6 @@ useBodyParser(app);
 useCookieParser(app);
 useRoutes(app);
 
-// const server = createServer(app);
-// socketIO(server);
-
 const { HOST, PORT } = env;
 
 app.listen(PORT, HOST, () => {
