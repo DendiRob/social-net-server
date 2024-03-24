@@ -6,7 +6,22 @@ export const getProfile = async (userId: number) => {
       userId
     },
     include: {
-      userProfileFiles: true
+      userProfileFiles: {
+        where: {
+          isProfileAvatar: true
+        }
+      }
+    }
+  });
+};
+
+export const getFile = async (fileId: number) => {
+  return await prisma.userProfileFiles.findUnique({
+    where: {
+      id: fileId
+    },
+    include: {
+      userProfile: true
     }
   });
 };

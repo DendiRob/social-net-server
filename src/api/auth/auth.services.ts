@@ -1,5 +1,6 @@
 import prisma from 'prisma/prisma.js';
 
+import path from 'node:path';
 import { env } from '@/config/env.js';
 import { genPassword, genUuid } from '@/utils/cryptoTools.js';
 import { decodeToken, genBothTokens } from '@/utils/jwtTokens.js';
@@ -64,7 +65,7 @@ export const registration = async (
       if (checkMimeType === null) {
         return await Promise.reject(
           ErrorHandler.BadRequestError({
-            client: ['Запрещенный тип аватарки']
+            client: 'Запрещенный тип аватарки'
           })
         );
       }
@@ -82,8 +83,13 @@ export const registration = async (
         }
       });
 
-      const foldersPath =
-        env.DST_FILES_PATH + `\\users\\${userData.id}\\profile\\avatar`;
+      const foldersPath = path.join(
+        env.DST_FILES_PATH,
+        'users',
+        `${userData.id}`,
+        'profile',
+        'avatar'
+      );
 
       await fileController.writeFile({
         dirPath: foldersPath,
